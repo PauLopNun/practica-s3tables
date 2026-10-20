@@ -43,3 +43,9 @@ services:
     env_file:
       - path: .localstack.env
         required: false
+    volumes:
+      # Cache de LocalStack: el motor de Athena (~4 min) solo se descarga la primera vez
+      - localstack-cache:/var/lib/localstack
+
+volumes:
+  localstack-cache:

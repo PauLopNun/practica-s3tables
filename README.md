@@ -146,7 +146,48 @@ awslocal s3tables list-table-buckets
 awslocal s3tables list-tables --table-bucket-arn arn:aws:s3tables:us-east-1:000000000000:bucket/mi-table-bucket
 ```
 
-### 3.3 Limpiar y parar
+### 3.3 Consultar con Athena (`SELECT`)
+
+Con la tabla ya creada (paso 3.2), puedes hacer consultas SQL con **Amazon Athena**, igual que en la consola de AWS:
+
+```bash
+./athena_s3tables.sh
+```
+
+Sin argumentos lanza una consulta de ejemplo. Para hacer tu propio `SELECT`, pásalo entre comillas dobles:
+```bash
+./athena_s3tables.sh "SELECT id, cliente, importe FROM pedidos WHERE importe > 10 ORDER BY id"
+```
+
+Resultado esperado del ejemplo:
+```
+cliente  total
+Marta    42.0
+Ana      27.24
+Pablo    12.0
+Luis     5.5
+```
+
+> ⏳ **La primera vez tarda unos 5 minutos** porque LocalStack descarga el motor de Athena (Trino + Hadoop).
+> Se guarda en caché (volumen Docker `localstack-cache`) y después cada consulta tarda segundos,
+> aunque pares y vuelvas a arrancar.
+
+Cómo funciona por dentro (lo mismo que harías con `aws athena` en AWS real):
+```bash
+awslocal athena start-query-execution \
+  --query-string "SELECT * FROM pedidos" \
+  --query-execution-context Catalog=s3tablescatalog/mi-table-bucket,Database=ventas \
+  --result-configuration OutputLocation=s3://athena-resultados/
+awslocal athena get-query-results --query-execution-id <ID que devuelve el comando anterior>
+```
+- **Catálogo** = `s3tablescatalog/<nombre del table bucket>` · **Database** = el namespace · **Tabla** = la tabla de S3 Tables.
+- Indica catálogo y base de datos en `--query-execution-context` y en el SQL pon solo el nombre de la tabla.
+  La forma con el nombre completo (`"s3tablescatalog/mi-table-bucket"."ventas"."pedidos"`) falla en LocalStack.
+
+Probado en LocalStack `2026.10.0` (licencia Student): `GROUP BY`, `WHERE` y `ORDER BY` devuelven los mismos
+resultados que DuckDB en el paso 3.2; primera consulta ≈ 5 min, siguientes ≈ 30 s tras rearrancar el contenedor.
+
+### 3.4 Limpiar y parar
 
 ```bash
 ./limpiar_s3tables.sh
@@ -162,6 +203,7 @@ docker compose --profile s3tables down
 2. En `practica.py`, rellena la columna `pais` en un lote nuevo y saca las ventas por país con DuckDB.
 3. Borra los pedidos de Ana con `tabla.delete("cliente = 'Ana'")` y recupéralos leyendo el snapshot anterior.
 4. Parte 2: crea un namespace `marketing` con `awslocal s3tables create-namespace` y una tabla `campanas` desde PyIceberg.
+5. Athena: saca con `./athena_s3tables.sh "..."` el pedido de mayor importe y el número de pedidos por cliente.
 
 ---
 
@@ -174,10 +216,14 @@ docker compose --profile s3tables down
 | `port is already allocated` (4566) | Hay otra parte arrancada: `docker compose --profile s3tables down` |
 | `License activation failed` en los logs | Falta `.localstack.env` o el token no es válido/Student |
 | `s3tables service is not included within your LocalStack license` | Tu cuenta no tiene el plan Student activo (paso 3.1) |
+| Athena se queda "Ejecutando....." mucho rato | Normal la primera vez (~5 min, descarga el motor). Si falla: `docker logs lab-s3tables 2>&1 \| grep -A5 'Athena error'` |
+| Athena: `FAILED` con tabla no encontrada | Ejecuta antes `./practica_s3tables.sh` para crear la tabla |
 | Algo se ha quedado raro | `docker compose --profile s3tables down` y vuelve a empezar la parte |
 
 ## Notas
 
 - Versiones fijadas para que todos tengáis lo mismo: LocalStack `2026.10.0` (S3 Tables), LocalStack `4.9` (S3 de la parte 1), Apache Iceberg REST `1.9.1`, Python 3.12 y librerías en `uv.lock`.
 - LocalStack ignora el esquema de `aws s3tables create-table --metadata`; por eso la tabla se crea desde PyIceberg.
-- Los datos se pierden al hacer `docker compose down`: cada práctica empieza desde cero.
+- Los datos se pierden al hacer `docker compose down`: cada práctica empieza desde cero
+  (el volumen `localstack-cache` solo guarda el motor de Athena descargado, no tus tablas).
+- Para borrar también esa caché: `docker compose --profile s3tables down -v`.
