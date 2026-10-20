@@ -26,7 +26,7 @@ gratis, sin sudo y sin tocar una cuenta de AWS.
 ## 1. Instalación (solo la primera vez)
 
 ```bash
-git clone https://github.com/<USUARIO>/practica-s3tables.git
+git clone https://github.com/PauLopNun/practica-s3tables.git
 cd practica-s3tables
 
 # uv (gestor de Python) y awslocal (AWS CLI apuntando a LocalStack)
