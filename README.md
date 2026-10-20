@@ -154,18 +154,38 @@ Con la tabla ya creada (paso 3.2), puedes hacer consultas SQL con **Amazon Athen
 ./athena_s3tables.sh
 ```
 
-Sin argumentos lanza una consulta de ejemplo. Para hacer tu propio `SELECT`, pásalo entre comillas dobles:
-```bash
-./athena_s3tables.sh "SELECT id, cliente, importe FROM pedidos WHERE importe > 10 ORDER BY id"
-```
+Se abre una **consola**: escribe tu `SELECT` y pulsa Enter. Puedes encadenar todas las consultas que quieras,
+usar las flechas ↑/↓ para recuperar las anteriores y escribir `salir` para terminar.
 
-Resultado esperado del ejemplo:
 ```
+athena> SELECT cliente, SUM(importe) AS total FROM pedidos GROUP BY cliente ORDER BY total DESC
+Ejecutando (la primera vez tarda unos minutos)... SUCCEEDED
 cliente  total
 Marta    42.0
 Ana      27.24
 Pablo    12.0
 Luis     5.5
+
+athena> SELECT * FROM pedidos WHERE cliente = 'Ana'
+...
+athena> salir
+```
+
+- Tabla: `pedidos` · columnas: `id`, `cliente`, `importe`.
+- Los textos van entre comillas simples: `'Ana'`. El `;` final es opcional.
+- Si te equivocas en el SQL, sale `FAILED` y puedes seguir escribiendo.
+
+Ideas para probar:
+```sql
+SELECT * FROM pedidos ORDER BY importe DESC LIMIT 2
+SELECT cliente, COUNT(*) AS pedidos, SUM(importe) AS total FROM pedidos GROUP BY cliente
+SELECT MAX(importe) AS maximo, MIN(importe) AS minimo, AVG(importe) AS media FROM pedidos
+SELECT cliente, importe, CASE WHEN importe > 15 THEN 'grande' ELSE 'pequeno' END AS tipo FROM pedidos
+```
+
+También puedes lanzar una sola consulta sin entrar en la consola:
+```bash
+./athena_s3tables.sh "SELECT * FROM pedidos WHERE importe > 10"
 ```
 
 > ⏳ **La primera vez tarda unos 5 minutos** porque LocalStack descarga el motor de Athena (Trino + Hadoop).
@@ -185,7 +205,7 @@ awslocal athena get-query-results --query-execution-id <ID que devuelve el coman
   La forma con el nombre completo (`"s3tablescatalog/mi-table-bucket"."ventas"."pedidos"`) falla en LocalStack.
 
 Probado en LocalStack `2026.10.0` (licencia Student): `GROUP BY`, `WHERE` y `ORDER BY` devuelven los mismos
-resultados que DuckDB en el paso 3.2; primera consulta ≈ 5 min, siguientes ≈ 30 s tras rearrancar el contenedor.
+resultados que DuckDB en el paso 3.2; la consola acepta varias consultas seguidas y sigue tras un error de SQL; primera consulta ≈ 5 min, siguientes ≈ 30 s tras rearrancar el contenedor.
 
 ### 3.4 Limpiar y parar
 
