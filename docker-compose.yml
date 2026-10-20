@@ -1,0 +1,45 @@
+# Laboratorio local tipo S3 Tables: S3 (LocalStack) + catalogo REST de Apache Iceberg
+services:
+  s3:
+    image: localstack/localstack:4.9
+    container_name: lab-s3
+    ports: ["4566:4566"]
+    environment:
+      SERVICES: s3
+    volumes:
+      - ./init:/etc/localstack/init/ready.d:ro
+    healthcheck:
+      test: ["CMD", "bash", "-c", "awslocal s3api head-bucket --bucket mi-table-bucket"]
+      interval: 3s
+      retries: 30
+
+  catalog:
+    image: apache/iceberg-rest-fixture:1.9.1
+    container_name: lab-catalog
+    ports: ["8181:8181"]
+    depends_on:
+      s3:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_REGION: us-east-1
+      CATALOG_WAREHOUSE: s3://mi-table-bucket/
+      CATALOG_IO__IMPL: org.apache.iceberg.aws.s3.S3FileIO
+      CATALOG_S3_ENDPOINT: http://s3:4566
+      CATALOG_S3_PATH__STYLE__ACCESS: "true"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8181/v1/config"]
+      interval: 3s
+      retries: 30
+
+  # Parte 2: S3 Tables "de verdad" (comandos aws s3tables). Requiere token propio en .localstack.env
+  # Arrancar con: docker compose --profile s3tables up -d s3tables
+  s3tables:
+    image: localstack/localstack:2026.10.0
+    container_name: lab-s3tables
+    profiles: ["s3tables"]
+    ports: ["4566:4566"]
+    env_file:
+      - path: .localstack.env
+        required: false

@@ -1,0 +1,5 @@
+[project]
+name = "practica-s3tables"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = ["pyiceberg[pyarrow,s3fs]", "boto3", "duckdb"]
