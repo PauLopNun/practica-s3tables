@@ -72,6 +72,16 @@ docker compose --profile s3tables up -d --wait s3tables >/dev/null 2>&1 || true
 LICENCIA=$(docker logs lab-s3tables 2>&1 | grep -io 'license [^ ]*:[a-z]*' | tail -1)
 if awslocal s3tables list-table-buckets >/dev/null 2>&1; then
   ok "Licencia activa (${LICENCIA##*:}) y S3 Tables disponible"
+  # Primera consulta de Athena: deja descargado el motor (volumen compartido del equipo)
+  # para que en clase cada consulta tarde segundos. Si ya estaba descargado, es rapido.
+  echo "  Preparando Athena y probando la practica completa (la primera vez en este equipo ~5 min)..."
+  if ./practica_s3tables.sh >/dev/null 2>&1 \
+     && ./athena_s3tables.sh "SELECT COUNT(*) AS filas FROM pedidos" 2>/dev/null | grep -qx '5'; then
+    ok "Practica S3 Tables + consulta Athena funcionando"
+  else
+    echo "  [AVISO] La prueba con Athena no ha salido bien. Puedes seguir con el README y repetir ./instalar.sh."
+  fi
+  ./limpiar_s3tables.sh >/dev/null 2>&1 || true
   docker compose --profile s3tables down >/dev/null 2>&1
 else
   docker logs lab-s3tables 2>&1 | grep -iE 'licen|reason' | tail -3 >&2

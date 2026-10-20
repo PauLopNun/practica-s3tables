@@ -44,8 +44,10 @@ services:
       - path: .localstack.env
         required: false
     volumes:
-      # Cache de LocalStack: el motor de Athena (~4 min) solo se descarga la primera vez
-      - localstack-cache:/var/lib/localstack
+      # Solo el motor de Athena (Trino + Hadoop, ~4 GB): se descarga una vez y lo reutilizan
+      # todas las copias del proyecto y todos los usuarios del equipo. La licencia NO se comparte.
+      - athena-motor:/var/lib/localstack/lib
 
 volumes:
-  localstack-cache:
+  athena-motor:
+    name: localstack-athena-motor
