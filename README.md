@@ -4,9 +4,21 @@ Entorno para practicar **Amazon S3 Tables** (tablas Apache Iceberg gestionadas) 
 gratis, sin sudo y sin tocar una cuenta de AWS.
 
 - **Parte 1 – Iceberg por dentro:** no necesita cuenta. Ves cómo se guardan las tablas (Parquet + metadatos).
-- **Parte 2 – S3 Tables:** usa los mismos comandos que en AWS (`aws s3tables ...`). Necesita un token gratuito de estudiante.
+- **Parte 2 – S3 Tables:** usa los mismos comandos que en AWS (`aws s3tables ...`) y consultas `SELECT` con **Athena**.
+  Necesita un token gratuito de estudiante.
 
 > Copia los comandos **tal cual**, en orden, desde la carpeta del proyecto.
+
+### Chuleta (cuando ya está instalado)
+
+```bash
+cd practica-s3tables
+docker compose --profile s3tables up -d --wait s3tables   # arrancar S3 Tables
+./practica_s3tables.sh                                    # crear table bucket, namespace, tabla y datos
+./athena_s3tables.sh                                      # consola Athena: escribe tus SELECT ('salir' para terminar)
+./limpiar_s3tables.sh                                     # borrar tabla, namespace y table bucket
+docker compose --profile s3tables down                    # parar
+```
 
 ---
 
@@ -239,6 +251,21 @@ docker compose --profile s3tables down
 | Athena se queda "Ejecutando....." mucho rato | Normal la primera vez (~5 min, descarga el motor). Si falla: `docker logs lab-s3tables 2>&1 \| grep -A5 'Athena error'` |
 | Athena: `FAILED` con tabla no encontrada | Ejecuta antes `./practica_s3tables.sh` para crear la tabla |
 | Algo se ha quedado raro | `docker compose --profile s3tables down` y vuelve a empezar la parte |
+
+## 6. Qué hay en el repositorio
+
+| Fichero | Para qué sirve |
+|---|---|
+| `instalar.sh` | Instalador automático (requisitos, dependencias, imágenes y token) |
+| `docker-compose.yml` | Servicios: Parte 1 (`s3` + `catalog`) y Parte 2 (perfil `s3tables`) |
+| `init/crear-bucket.sh` | Crea el bucket S3 de la Parte 1 al arrancar |
+| `practica.py` | Parte 1: Iceberg con PyIceberg + DuckDB |
+| `practica_s3tables.sh` | Parte 2: table bucket y namespace con `awslocal s3tables` + ejecuta `practica_s3tables.py` |
+| `practica_s3tables.py` | Parte 2: crea la tabla e inserta/consulta por el endpoint Iceberg REST de S3 Tables |
+| `athena_s3tables.sh` | Parte 2: consola Athena para hacer `SELECT` |
+| `limpiar_s3tables.sh` | Parte 2: borra tablas, namespace y table bucket |
+| `pyproject.toml`, `uv.lock`, `.python-version` | Dependencias de Python con versiones fijadas |
+| `.localstack.env` | Tu token (lo crea el instalador; **no se sube a GitHub**) |
 
 ## Notas
 
