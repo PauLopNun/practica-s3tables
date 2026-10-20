@@ -25,6 +25,38 @@ gratis, sin sudo y sin tocar una cuenta de AWS.
 
 ## 1. Instalación (solo la primera vez)
 
+Elige **una** de las dos opciones. Las dos dejan exactamente lo mismo instalado.
+
+### Opción A – Rápida: instalador automático (recomendada)
+
+Ten a mano tu token de LocalStack (cómo conseguirlo: pasos 1 a 3 del [apartado 3.1](#31-consigue-tu-token-solo-la-primera-vez)).
+Si aún no lo tienes, puedes instalar igualmente y hacer solo la Parte 1.
+
+```bash
+git clone https://github.com/PauLopNun/practica-s3tables.git
+cd practica-s3tables
+./instalar.sh
+```
+
+El instalador:
+1. Comprueba Docker, Docker Compose y la red.
+2. Instala `uv`, `awslocal` y las librerías de Python (sin sudo).
+3. Descarga las imágenes de Docker.
+4. **Te pide el token**: pégalo (Ctrl+Shift+V en la terminal) y pulsa Enter. No se ve al pegarlo, es normal;
+   después te muestra el principio y el final (`ls-xxxx...xxxx`) para que compruebes que es el tuyo.
+   Si pulsas Enter sin pegar nada, se salta este paso.
+5. Comprueba que tu licencia es Student y que S3 Tables funciona.
+
+Si todo sale `[OK]`, salta directamente al [apartado 2](#2-parte-1--iceberg-por-dentro-sin-cuenta).
+Puedes volver a ejecutar `./instalar.sh` las veces que quieras (por ejemplo, para poner el token más tarde).
+
+Al terminar, en esa misma terminal ejecuta también:
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+### Opción B – Manual: comando a comando
+
 ```bash
 git clone https://github.com/PauLopNun/practica-s3tables.git
 cd practica-s3tables
@@ -77,7 +109,8 @@ Cada persona necesita **su propio token**. No compartas el tuyo.
 1. Ten activo el **GitHub Student Developer Pack** (https://education.github.com/pack).
 2. Entra en https://www.localstack.cloud/localstack-for-students e inicia sesión con **esa cuenta de GitHub**.
 3. En https://app.localstack.cloud comprueba que tu plan es **Student** y copia tu **Auth Token** (empieza por `ls-`).
-4. Guárdalo en el proyecto (cambia `ls-PEGA-AQUI-TU-TOKEN` por el tuyo):
+4. Guárdalo en el proyecto. **Si usaste `./instalar.sh` con el token, ya está hecho: salta al 3.2.**
+   Para hacerlo a mano (cambia `ls-PEGA-AQUI-TU-TOKEN` por el tuyo):
    ```bash
    echo 'LOCALSTACK_AUTH_TOKEN=ls-PEGA-AQUI-TU-TOKEN' > .localstack.env
    chmod 600 .localstack.env
