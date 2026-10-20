@@ -31,7 +31,7 @@ docker compose --profile s3tables down                    # parar
   ```
   Si da error de permisos, tu usuario no está en el grupo `docker`: pídeselo al profesor.
 - **Git**.
-- Unos 3 GB libres y conexión a Internet la primera vez.
+- Unos 8 GB libres (imágenes de Docker + motor de Athena) y conexión a Internet la primera vez.
 
 ---
 
@@ -58,6 +58,8 @@ El instalador:
    después te muestra el principio y el final (`ls-xxxx...xxxx`) para que compruebes que es el tuyo.
    Si pulsas Enter sin pegar nada, se salta este paso.
 5. Comprueba que tu licencia es Student y que S3 Tables funciona.
+6. Deja **Athena preparado** y prueba la práctica completa (tabla + datos + `SELECT`).
+   La primera vez en cada equipo tarda unos 6 minutos en total; si el motor ya está descargado en ese PC, ~1 minuto.
 
 Si todo sale `[OK]`, salta directamente al [apartado 2](#2-parte-1--iceberg-por-dentro-sin-cuenta).
 Puedes volver a ejecutar `./instalar.sh` las veces que quieras (por ejemplo, para poner el token más tarde).
@@ -200,9 +202,11 @@ También puedes lanzar una sola consulta sin entrar en la consola:
 ./athena_s3tables.sh "SELECT * FROM pedidos WHERE importe > 10"
 ```
 
-> ⏳ **La primera vez tarda unos 5 minutos** porque LocalStack descarga el motor de Athena (Trino + Hadoop).
-> Se guarda en caché (volumen Docker `localstack-cache`) y después cada consulta tarda segundos,
-> aunque pares y vuelvas a arrancar.
+> ⏳ **Tiempos:** la primera consulta tras arrancar el contenedor tarda **~30 s** (arranca el motor) y las siguientes **~3 s**.
+> El motor de Athena (Trino + Hadoop, ~4 GB) se descarga **una sola vez por equipo**: lo hace `./instalar.sh`
+> y se guarda en el volumen Docker `localstack-athena-motor`, compartido por todas las copias del proyecto y todos
+> los usuarios de ese PC (solo el motor: la licencia/token de cada uno no se comparte).
+> Si no usaste el instalador, la primera consulta en ese equipo tardará ~5 minutos.
 
 Cómo funciona por dentro (lo mismo que harías con `aws athena` en AWS real):
 ```bash
@@ -217,7 +221,7 @@ awslocal athena get-query-results --query-execution-id <ID que devuelve el coman
   La forma con el nombre completo (`"s3tablescatalog/mi-table-bucket"."ventas"."pedidos"`) falla en LocalStack.
 
 Probado en LocalStack `2026.10.0` (licencia Student): `GROUP BY`, `WHERE` y `ORDER BY` devuelven los mismos
-resultados que DuckDB en el paso 3.2; la consola acepta varias consultas seguidas y sigue tras un error de SQL; primera consulta ≈ 5 min, siguientes ≈ 30 s tras rearrancar el contenedor.
+resultados que DuckDB en el paso 3.2; la consola acepta varias consultas seguidas y sigue tras un error de SQL; instalador en equipo nuevo ≈ 6 min, en equipo con el motor ya descargado ≈ 1 min; en clase, primera consulta ≈ 30 s y siguientes ≈ 3 s.
 
 ### 3.4 Limpiar y parar
 
@@ -248,7 +252,7 @@ docker compose --profile s3tables down
 | `port is already allocated` (4566) | Hay otra parte arrancada: `docker compose --profile s3tables down` |
 | `License activation failed` en los logs | Falta `.localstack.env` o el token no es válido/Student |
 | `s3tables service is not included within your LocalStack license` | Tu cuenta no tiene el plan Student activo (paso 3.1) |
-| Athena se queda "Ejecutando....." mucho rato | Normal la primera vez (~5 min, descarga el motor). Si falla: `docker logs lab-s3tables 2>&1 \| grep -A5 'Athena error'` |
+| Athena se queda "Ejecutando....." mucho rato | ~30 s es normal en la primera consulta; ~5 min si el motor no estaba descargado (ejecuta `./instalar.sh`). Si falla: `docker logs lab-s3tables 2>&1 \| grep -A5 'Athena error'` |
 | Athena: `FAILED` con tabla no encontrada | Ejecuta antes `./practica_s3tables.sh` para crear la tabla |
 | Algo se ha quedado raro | `docker compose --profile s3tables down` y vuelve a empezar la parte |
 
@@ -272,5 +276,6 @@ docker compose --profile s3tables down
 - Versiones fijadas para que todos tengáis lo mismo: LocalStack `2026.10.0` (S3 Tables), LocalStack `4.9` (S3 de la parte 1), Apache Iceberg REST `1.9.1`, Python 3.12 y librerías en `uv.lock`.
 - LocalStack ignora el esquema de `aws s3tables create-table --metadata`; por eso la tabla se crea desde PyIceberg.
 - Los datos se pierden al hacer `docker compose down`: cada práctica empieza desde cero
-  (el volumen `localstack-cache` solo guarda el motor de Athena descargado, no tus tablas).
-- Para borrar también esa caché: `docker compose --profile s3tables down -v`.
+  (el volumen `localstack-athena-motor` solo guarda el motor de Athena, no tus tablas).
+- Para liberar esos ~4 GB: `docker volume rm localstack-athena-motor` (se volverá a descargar al usarlo).
+  No uses `down -v` si otros usuarios del PC lo están aprovechando.
