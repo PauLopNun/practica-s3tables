@@ -31,7 +31,7 @@ cd practica-s3tables
 
 # uv (gestor de Python) y awslocal (AWS CLI apuntando a LocalStack)
 curl -LsSf https://astral.sh/uv/install.sh | sh
-source $HOME/.local/bin/env
+export PATH="$HOME/.local/bin:$PATH"
 uv tool install awscli-local --with awscli
 
 # Librerías de Python del proyecto (versiones fijadas en uv.lock)
@@ -136,7 +136,7 @@ docker compose --profile s3tables down
 
 | Problema | Solución |
 |---|---|
-| `uv: command not found` / `awslocal: command not found` | `source $HOME/.local/bin/env` (o abre una terminal nueva) |
+| `uv: command not found` / `awslocal: command not found` | `export PATH="$HOME/.local/bin:$PATH"` (o abre una terminal nueva) |
 | `permission denied ... docker.sock` | Tu usuario no está en el grupo `docker` |
 | `port is already allocated` (4566) | Hay otra parte arrancada: `docker compose --profile s3tables down` |
 | `License activation failed` en los logs | Falta `.localstack.env` o el token no es válido/Student |
